@@ -20,8 +20,6 @@
       />
 
       <div class="giphy__container">
-         <Loader v-if="loading"/>
-
          <div
              v-if="!loading"
              v-for="gif in gifs"
@@ -35,7 +33,14 @@
             >
          </div>
 
-         <Loader v-if="loadingMore"/>
+         <h3
+             v-if="!loading && !gifs.length"
+             class="giphy__not-found"
+         >
+            Gifs not found
+         </h3>
+
+         <Loader v-if="loading || loadMore"/>
       </div>
    </div>
 </template>
@@ -58,12 +63,12 @@ export default {
       offset: 0,
       totalCount: null,
       loading: true,
-      loadingMore: false,
+      loadMore: false,
       gifs: [],
       selectedGif: null,
       trendingGifs: [],
       apiUrl: `https://api.giphy.com/v1/gifs/`,
-      apiKey: '?api_key=dc6zaTOxFJmzC',
+      apiKey: '?api_key=pEcPq2q8vGsQZ05EhRV4gHfDt1se8CYd',
       limit: 45,
       error: null,
    }),
@@ -71,18 +76,18 @@ export default {
       search(type) {
          if (!this.query) {
             this.gifs = this.trendingGifs
-            this.loading = false
-
             return
          }
 
          if(type === 'load_more') {
-            this.loadingMore = true
             this.offset += this.limit
+            if(this.offset > this.totalCount) return
+
+            this.loadMore = true
          }
          else {
-            this.loading = true
             this.offset = 0
+            this.loading = true
          }
 
          axios
@@ -95,7 +100,7 @@ export default {
                 }
                 else {
                    this.gifs = this.gifs.concat(result.data.data)
-                   this.loadingMore = false
+                   this.loadMore = false
                 }
              })
              .catch(error => {
@@ -128,8 +133,10 @@ export default {
       this.search = debounce(this.search, this.searchDelay)
       // Search load more
       window.addEventListener('scroll', () => {
-         if(this.offset > this.totalCount || this.loadingMore) return
-         if((window.innerHeight + window.scrollY) >= document.body.offsetHeight) this.search('load_more')
+         if((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+            if(this.loading) return
+            this.search('load_more')
+         }
       })
    }
 }
@@ -189,6 +196,11 @@ a {
          height: 100%;
          object-fit: cover;
       }
+   }
+
+   &__not-found {
+      display: flex;
+      margin: 0 auto;
    }
 }
 </style>
